@@ -4,9 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",
-    "preview": "vite preview",
-    "postinstall": "chmod +x ./node_modules/.bin/vite || echo 'Windows detected, skipping chmod'"
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -17,7 +16,7 @@
     "vite": "^8.0.0"
   },
   "engines": {
-    "node": "24.x",
-    "npm": "10.x"
+    "node": ">=18 <=24",
+    "npm": ">=8 <=11"
   }
 }

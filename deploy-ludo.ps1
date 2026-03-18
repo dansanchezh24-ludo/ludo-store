@@ -1,30 +1,63 @@
-# deploy-ludo.ps1 - Script avanzado para Windows PowerShell
+# deploy-ludo.ps1
+# Script automático de build y deploy para LUDO
+# ⚠️ Ejecutar en PowerShell con permisos de administrador si hay archivos bloqueados
 
-# Mensaje de commit automático
-$commitMessage = "Deploy automático - build lista para Vercel"
+Write-Host "🚀 Iniciando deploy automático de LUDO..."
 
-Write-Host "1 Limpiando dependencias antiguas..."
-Remove-Item -Recurse -Force .\node_modules -ErrorAction SilentlyContinue
-Remove-Item -Force .\package-lock.json -ErrorAction SilentlyContinue
+# ---------------------------
+# 1️⃣ Cerrar procesos Node activos (si los hay)
+# ---------------------------
+Get-Process node -ErrorAction SilentlyContinue | ForEach-Object {
+    Stop-Process -Id $_.Id -Force
+}
+Write-Host "✅ Procesos Node cerrados (si existían)"
 
-Write-Host "2️ Instalando dependencias con legacy-peer-deps..."
-npm install --legacy-peer-deps
-
-Write-Host "3️ Asegurando permisos correctos para Vite (Linux/Vercel)..."
-# Si está en Linux (Vercel) aplica chmod, en Windows se salta
-if ($env:OS -ne "Windows_NT") {
-    chmod +x ./node_modules/.bin/vite
+# ---------------------------
+# 2️⃣ Limpiar dependencias antiguas
+# ---------------------------
+Try {
+    Remove-Item -Recurse -Force .\node_modules -ErrorAction Stop
+    Write-Host "✅ node_modules eliminado"
+} Catch {
+    Write-Host " node_modules no se pudo eliminar completamente o ya estaba vacío"
 }
 
-Write-Host "4️ Generando build de producción..."
-npm run build
+Try {
+    Remove-Item -Force .\package-lock.json -ErrorAction Stop
+    Write-Host " package-lock.json eliminado"
+} Catch {
+    Write-Host " package-lock.json no existe"
+}
 
-Write-Host "5️ Levantando preview local en http://localhost:4173/ (opcional)..."
-Start-Process "cmd" "/c npm run preview"
+# ---------------------------
+# 3️⃣ Instalar dependencias
+# ---------------------------
+Write-Host "Instalando dependencias con legacy-peer-deps..."
+npm install --legacy-peer-deps
 
-Write-Host "6️ Haciendo commit y push automático a GitHub..."
+# ---------------------------
+# 4️⃣ Generar build de producción
+# ---------------------------
+Write-Host " Generando build de producción..."
+npx vite build
+Write-Host " Build completada. Carpeta 'dist' lista para Vercel."
+
+# ---------------------------
+# 5️⃣ Commit y push automático a GitHub
+# ---------------------------
+# Asegúrate de que tu repo ya tenga origin configurado y credenciales guardadas
+Write-Host " Commit y push automático a GitHub..."
 git add .
+$commitMessage = "Deploy automático - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 git commit -m "$commitMessage"
 git push origin main
+Write-Host " Commit y push completados"
 
-Write-Host "¡Todo listo! Build subida a GitHub y lista para deploy en Vercel."
+# ---------------------------
+# 6️⃣ Preview local opcional
+# ---------------------------
+Write-Host "Preview local (opcional) en http://localhost:4173/"
+Write-Host "Para exponer en tu red: npx vite preview --host"
+npx vite preview
+
+Write-Host "🎉 Deploy terminado. Vercel detectará automáticamente los cambios y hará el deploy."
